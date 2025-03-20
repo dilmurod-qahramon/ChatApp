@@ -17,6 +17,7 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 
+builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -28,14 +29,16 @@ app.UseCors(policy => policy
     .AllowCredentials()
     .SetIsOriginAllowed(origin => true) 
 );
-app.MapHub<ChatHub>("/chatHub");
+
+app.UseHttpsRedirection();
+app.UseRouting();
+app.UseAuthorization();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.UseHttpsRedirection();
-app.UseAuthorization();
+app.MapHub<ChatHub>("/chatHub");
 app.MapControllers();
 app.Run();

@@ -1,4 +1,5 @@
-﻿using ChatApp.Models;
+﻿using ChatApp.DTOs;
+using ChatApp.Models;
 using ChatApp.Services.interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,10 +10,13 @@ namespace ChatApp.Controllers
     public class MessagesController : ControllerBase
     {
         private readonly IMessageService _messageService;
-
-        public MessagesController(IMessageService messageService)
+        private readonly IChatService _chatService;
+        private readonly IUserService _userService;
+        public MessagesController(IMessageService messageService, IChatService chatService, IUserService userService)
         {
             _messageService = messageService;
+            _chatService = chatService;
+            _userService = userService;
         }
 
         [HttpGet("{id}")]
@@ -24,35 +28,49 @@ namespace ChatApp.Controllers
         }
 
         [HttpGet("chat/{chatId}")]
-        public async Task<IActionResult> GetMessagesByChatId(Guid chatId)
+        public async Task<IActionResult> GetAllMessagesInAChat(Guid chatId)
         {
             var messages = await _messageService.GetAllChatMessagesAsync(chatId);
             return Ok(messages);
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateMessage([FromBody] Message message)
+        public async Task<IActionResult> CreateMessage([FromBody] MessageDto messageDto)
         {
-            if (message == null) return BadRequest();
+            var message = new Message()
+            {
+                Text = messageDto.Text.Trim(),
+                UserId = messageDto.UserId,
+                ChatId = messageDto.ChatId,
+                ImageUrl = messageDto.ImageUrl.Trim(),
+            };
             var createdMessage = await _messageService.CreateNewMessageAsync(message);
             return CreatedAtAction(nameof(GetMessageById), new { id = createdMessage.Id }, createdMessage);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateMessage(Guid id, [FromBody] Message message)
+        public async Task<IActionResult> UpdateMessage(Guid id, [FromBody] MessageDto messageDto)
         {
-            if (message == null || id != message.Id) return BadRequest();
+            if (messageDto == null || id != messageDto.Id) return BadRequest();
+
+            var chat = _chatService.GetChatByIdAsync(messageDto.ChatId);
+            if(chat == null) return NotFound("chat is not  found!");
+
+            var user = _userService.GetUserByIdAsync(messageDto.UserId);
+            if(user == null) return NotFound("user is not  found!");
+
+            var message = await _messageService.GetMessageByIdAsync(id);
+            message.Text = messageDto.Text.Trim();
             var updatedMessage = await _messageService.EditMessageAsync(message);
-            if (updatedMessage == null) return NotFound();
             return Ok(updatedMessage);
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteMessage(Guid id)
+        public async Task<IActionResult> DeleteMessage(Guid id, Guid userId)
         {
             var message = await _messageService.GetMessageByIdAsync(id);
             if (message == null) return NotFound();
-
+            if(message.Id == userId) return BadRequest("User is not the owner of the message");
             await _messageService.DeleteMessageAsync(id);
             return NoContent();
         }

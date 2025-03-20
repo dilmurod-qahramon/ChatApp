@@ -10,6 +10,7 @@ namespace ChatApp.Models
         [MaxLength(200)]
         public string Name { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public Guid OwnerId { get; set; }
         public ICollection<Message> Messages { get; set; } = [];
         public ICollection<User> Users { get; set; } = [];
     }
