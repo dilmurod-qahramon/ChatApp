@@ -11,10 +11,11 @@ namespace ChatApp.Models
         public string? ImageUrl { get; set; }
         public DateTime SentAt { get; set; } = DateTime.UtcNow;
 
+        [Required]
         public Guid UserId { get; set; }
         public User User { get; set; }
-        public Guid ChatId { get; set; }
         [Required]
+        public Guid ChatId { get; set; }
         public Chat Chat { get; set; }
     }
 }

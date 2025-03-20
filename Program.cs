@@ -4,6 +4,7 @@ using ChatApp.Repositories.interfaces;
 using ChatApp.Repositories;
 using ChatApp.Services.interfaces;
 using ChatApp.Services;
+using ChatApp.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ChatDbContext>(options => 
@@ -21,7 +22,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
+app.UseCors(policy => policy
+    .AllowAnyMethod()
+    .AllowAnyHeader()
+    .AllowCredentials()
+    .SetIsOriginAllowed(origin => true) 
+);
+app.MapHub<ChatHub>("/chatHub");
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

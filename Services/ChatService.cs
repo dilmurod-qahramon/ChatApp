@@ -13,10 +13,10 @@ namespace ChatApp.Services
             _chatRepository = chatRepository;
         }
 
-        public async Task<IEnumerable<Chat>> GetAllUserChatsAsync(Guid userId)
-        {
-            return await _chatRepository.GetAllUserChatsAsync(userId);
-        }
+        //public async Task<IEnumerable<Chat>> GetAllUserChatsAsync(Guid userId)
+        //{
+        //    return await _chatRepository.GetAllUserChatsAsync(userId);
+        //}
 
         public async Task<Chat> GetChatByIdAsync(Guid chatId)
         {
@@ -38,14 +38,14 @@ namespace ChatApp.Services
             await _chatRepository.ClearChatHistoryAsync(chatId);
         }
 
-        public async Task<Chat> AddNewUserAsync(Guid chatId, User user)
+        public async Task<Chat> AddNewUserToChatAsync(Guid chatId, User user)
         {
-            return await _chatRepository.AddNewUserAsync(chatId, user);
+            return await _chatRepository.AddNewUserToChatAsync(chatId, user);
         }
 
-        public async Task<Chat> RemoveUserAsync(Guid chatId, Guid userId)
+        public async Task RemoveUserFromChatAsync(Guid chatId, Guid userId)
         {
-            return await _chatRepository.RemoveUserAsync(chatId, userId);
+            await _chatRepository.RemoveUserFromChatAsync(chatId, userId);
         }
 
         public async Task<bool> DeleteChatAsync(Guid chatId)

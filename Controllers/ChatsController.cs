@@ -38,9 +38,11 @@ namespace ChatApp.Controllers
         }
 
         [HttpPut("{chatId}")]
-        public async Task<IActionResult> UpdateChat(Guid chatId, [FromBody] Chat chat)
+        public async Task<IActionResult> UpdateChat(Guid chatId, [FromBody] Chat chatDto)
         {
-            var updatedChat = await _chatService.UpdateChatAsync(chat);
+            var chat = await _chatService.GetChatByIdAsync(chatId);
+            if (chat == null) return NotFound();
+            var updatedChat = await _chatService.UpdateChatAsync(chatDto);
             if (updatedChat == null) return NotFound();
             return Ok(updatedChat);
         }
@@ -56,7 +58,7 @@ namespace ChatApp.Controllers
         [HttpPost("{chatId}/users")]
         public async Task<IActionResult> AddUserToChat(Guid chatId, [FromBody] User user)
         {
-            var updatedChat = await _chatService.AddNewUserAsync(chatId, user);
+            var updatedChat = await _chatService.AddNewUserToChatAsync(chatId, user);
             if (updatedChat == null) return NotFound();
             return Ok(updatedChat);
         }
@@ -64,9 +66,8 @@ namespace ChatApp.Controllers
         [HttpDelete("{chatId}/users/{userId}")]
         public async Task<IActionResult> RemoveUserFromChat(Guid chatId, Guid userId)
         {
-            var updatedChat = await _chatService.RemoveUserAsync(chatId, userId);
-            if (updatedChat == null) return NotFound();
-            return Ok(updatedChat);
+            await _chatService.RemoveUserFromChatAsync(chatId, userId);
+            return Ok();
         }
 
         [HttpDelete("{chatId}/messages")]
