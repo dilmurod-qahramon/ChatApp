@@ -1,8 +1,7 @@
-﻿using ChatApp.Repositories.interfaces;
+﻿using ChatApp.DTOs;
 
-namespace ChatApp.Services.interfaces
+namespace ChatApp.Services.interfaces;
+public interface IUserService
 {
-    public interface IUserService : IUserRepository
-    {
-    }
+    Task<UserDto?> GetUserByIdAsync(Guid userId);
 }

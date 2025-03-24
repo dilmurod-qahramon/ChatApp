@@ -15,7 +15,7 @@ public class MessageRepository(ChatDbContext context) : IMessageRepository
             .ToListAsync();
     }
 
-    public async Task<Message> GetMessageByIdAsync(Guid id)
+    public async Task<Message?> GetMessageByIdAsync(Guid id)
     {
         return await context.Messages.FindAsync(id);
     }

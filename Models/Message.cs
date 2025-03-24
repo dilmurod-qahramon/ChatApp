@@ -1,7 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ChatApp.Models;
-
+[Table("messages")]
 public class Message
 {
     [Key]
@@ -13,7 +14,6 @@ public class Message
 
     [Required]
     public Guid UserId { get; set; }
-    public User User { get; set; }
     [Required]
     public Guid ChatId { get; set; }
     public Chat Chat { get; set; }

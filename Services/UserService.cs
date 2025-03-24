@@ -1,33 +1,19 @@
-﻿using ChatApp.Models;
-using ChatApp.Repositories.interfaces;
+﻿using ChatApp.DTOs;
 using ChatApp.Services.interfaces;
-
 namespace ChatApp.Services;
 
-public class UserService(IUserRepository userRepository) : IUserService
+public class UserService(HttpClient httpClient, IConfiguration configuration) : IUserService
 {
-    public async Task<IEnumerable<User>> GetAllUsersAsync()
+    public async Task<UserDto?> GetUserByIdAsync(Guid userId)
     {
-        return await userRepository.GetAllUsersAsync();
-    }
+        string userServiceUrl = configuration["UserService:BaseUrl"];
+        var response = await httpClient.GetAsync($"{userServiceUrl}/users/{userId}");
 
-    public async Task<User?> GetUserByIdAsync(Guid id)
-    {
-        return await userRepository.GetUserByIdAsync(id);
-    }
+        if (!response.IsSuccessStatusCode)
+            return null;
 
-    public async Task<User> CreateUserAsync(User user)
-    {
-        return await userRepository.CreateUserAsync(user);
-    }
-
-    public async Task<User?> UpdateUserAsync(User user)
-    {
-        return await userRepository.UpdateUserAsync(user);
-    }
-
-    public async Task<bool> DeleteUserByIdAsync(Guid id)
-    {
-        return await userRepository.DeleteUserByIdAsync(id);
+        return await response.Content.ReadFromJsonAsync<UserDto>();
     }
 }
+
+

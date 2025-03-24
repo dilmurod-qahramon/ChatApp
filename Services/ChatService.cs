@@ -6,9 +6,14 @@ namespace ChatApp.Services;
 
 public class ChatService(IChatRepository chatRepository) : IChatService
 {
-    public async Task<Chat> GetChatByIdAsync(Guid chatId)
+    public async Task<Chat?> GetChatByIdAsync(Guid chatId)
     {
         return await chatRepository.GetChatByIdAsync(chatId);
+    }
+
+    public async Task<bool> IsMemberOfChat(Guid userId, Guid chatId)
+    {
+        return await chatRepository.IsMemberOfChat(userId, chatId);
     }
 
     public async Task<Chat> CreateNewChatAsync(Chat chat)
@@ -26,9 +31,9 @@ public class ChatService(IChatRepository chatRepository) : IChatService
         await chatRepository.ClearChatHistoryAsync(chatId);
     }
 
-    public async Task<Chat> AddNewUserToChatAsync(Guid chatId, User user)
+    public async Task<ChatUsers> AddNewUserToChatAsync(Guid chatId, Guid userId)
     {
-        return await chatRepository.AddNewUserToChatAsync(chatId, user);
+        return await chatRepository.AddNewUserToChatAsync(chatId, userId);
     }
 
     public async Task RemoveUserFromChatAsync(Guid chatId, Guid userId)
@@ -36,8 +41,8 @@ public class ChatService(IChatRepository chatRepository) : IChatService
         await chatRepository.RemoveUserFromChatAsync(chatId, userId);
     }
 
-    public async Task<bool> DeleteChatAsync(Guid chatId)
+    public async Task DeleteChatAsync(Guid chatId)
     {
-        return await chatRepository.DeleteChatAsync(chatId);
+        await chatRepository.DeleteChatAsync(chatId);
     }
 }

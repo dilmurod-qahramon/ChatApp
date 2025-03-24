@@ -6,17 +6,22 @@ using Microsoft.EntityFrameworkCore;
 namespace ChatApp.Repositories;
 public class ChatRepository(ChatDbContext context) : IChatRepository
 {
-    public async Task<Chat> GetChatByIdAsync(Guid chatId)
+    public async Task<Chat?> GetChatByIdAsync(Guid chatId)
         {
             return await context.Chats
-                .Include(chat => chat.Users) 
                 .Include(chat => chat.Messages) 
                 .FirstOrDefaultAsync(chat => chat.Id == chatId);
         }
+
+    public async Task<bool> IsMemberOfChat(Guid userId, Guid chatId)
+    {
+        return await context.ChatUsers.AnyAsync(cu => cu.UserId == userId && cu.ChatId == chatId);
+    }
    
     public async Task<Chat> CreateNewChatAsync(Chat chat)
     {
         await context.Chats.AddAsync(chat);
+        await context.ChatUsers.AddAsync(new() { ChatId = chat.Id, UserId = chat.OwnerId });
         await context.SaveChangesAsync();
         return chat;
     }
@@ -33,32 +38,30 @@ public class ChatRepository(ChatDbContext context) : IChatRepository
         await context.Messages
             .Where(m => m.ChatId == chatId)
             .ExecuteDeleteAsync();
+        await context.SaveChangesAsync();
     }
 
-    public async Task<Chat> AddNewUserToChatAsync(Guid chatId, User user)
+    public async Task<ChatUsers> AddNewUserToChatAsync(Guid chatId, Guid userId)
     {
-        var chat = await context.Chats.Include(c => c.Users).FirstOrDefaultAsync(c => c.Id == chatId);
-        chat.Users.Add(user);
+        var chatuser = await context.ChatUsers.AddAsync(new() { ChatId = chatId, UserId = userId });
         await context.SaveChangesAsync();
-        return chat;
+        return chatuser.Entity;
     }
 
     public async Task RemoveUserFromChatAsync(Guid chatId, Guid userId)
     {
-        var chat = await context.Chats.Include(c => c.Users).FirstOrDefaultAsync(c => c.Id == chatId);
-        var user = chat.Users.FirstOrDefault(u => u.Id == userId);
-        chat.Users.Remove(user);
-        await context.SaveChangesAsync();
+        var chatUser = await context.ChatUsers.FirstOrDefaultAsync(x => x.ChatId == chatId && x.UserId == userId);
+        if (chatUser != null)
+        {
+            context.ChatUsers.Remove(chatUser);
+            await context.SaveChangesAsync();
+        }
     }
     
-    public async Task<bool> DeleteChatAsync(Guid chatId)
+    public async Task DeleteChatAsync(Guid chatId)
     {
-        var chat = await context.Chats.FindAsync(chatId);
-        if (chat == null) return false;
-
-        context.Chats.Remove(chat);
-        await context.Chats.Where(chat => chat.Id == chatId).ExecuteDeleteAsync();
+        await context.ChatUsers.Where(cu => cu.ChatId == chatId).ExecuteDeleteAsync();
+        await context.Chats.Where(chat => chat.Id == chatId).ExecuteDeleteAsync(); 
         await context.SaveChangesAsync();
-        return true;
     }
 }

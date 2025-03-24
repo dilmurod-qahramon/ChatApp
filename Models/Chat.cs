@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
-
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ChatApp.Models;
-
+[Table("chats")]
 public class Chat
 {
     [Key]
@@ -12,5 +12,4 @@ public class Chat
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public Guid OwnerId { get; set; }
     public ICollection<Message> Messages { get; set; } = [];
-    public ICollection<User> Users { get; set; } = [];
 }

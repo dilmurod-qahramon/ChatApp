@@ -1,5 +1,4 @@
-﻿using ChatApp.Models;
-using ChatApp.Repositories.interfaces;
+﻿using ChatApp.Repositories.interfaces;
 
 namespace ChatApp.Services.interfaces
 {
