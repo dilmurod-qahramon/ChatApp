@@ -1,13 +1,12 @@
 ﻿using ChatApp.Models;
 
-namespace ChatApp.Repositories.interfaces
+namespace ChatApp.Repositories.interfaces;
+
+public interface IUserRepository
 {
-    public interface IUserRepository
-    {
-        Task<User> GetUserByIdAsync(Guid id);
-        Task<IEnumerable<User>> GetAllUsersAsync();
-        Task<User> CreateUserAsync(User user);
-        Task<User> UpdateUserAsync(User user);
-        Task<bool> DeleteUserByIdAsync(Guid id);
-    }
+    Task<User?> GetUserByIdAsync(Guid id);
+    Task<IEnumerable<User>> GetAllUsersAsync();
+    Task<User> CreateUserAsync(User user);
+    Task<User?> UpdateUserAsync(User user);
+    Task<bool> DeleteUserByIdAsync(Guid id);
 }

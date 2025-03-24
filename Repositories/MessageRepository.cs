@@ -3,45 +3,42 @@ using ChatApp.Models;
 using ChatApp.Repositories.interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace ChatApp.Repositories
+namespace ChatApp.Repositories;
+
+public class MessageRepository(ChatDbContext context) : IMessageRepository
 {
-    public class MessageRepository(ChatDbContext context) : IMessageRepository
+    public async Task<IEnumerable<Message>> GetAllChatMessagesAsync(Guid chatId)
     {
-        private readonly ChatDbContext _context = context;
+        return await context.Messages
+            .Where(m => m.ChatId == chatId) 
+            .OrderBy(m => m.SentAt)
+            .ToListAsync();
+    }
 
-        public async Task<IEnumerable<Message>> GetAllChatMessagesAsync(Guid chatId)
-        {
-            return await _context.Messages
-                .Where(m => m.ChatId == chatId) 
-                .OrderBy(m => m.SentAt)
-                .ToListAsync();
-        }
+    public async Task<Message> GetMessageByIdAsync(Guid id)
+    {
+        return await context.Messages.FindAsync(id);
+    }
 
-        public async Task<Message> GetMessageByIdAsync(Guid id)
-        {
-            return await _context.Messages.FindAsync(id);
-        }
+    public async Task<Message> CreateNewMessageAsync(Message message)
+    {
+        await context.Messages.AddAsync(message);
+        await context.SaveChangesAsync();
+        return message;
+    }
 
-        public async Task<Message> CreateNewMessageAsync(Message message)
-        {
-            await _context.Messages.AddAsync(message);
-            await _context.SaveChangesAsync();
-            return message;
-        }
+    public async Task<Message> EditMessageAsync(Message message)
+    {
+        context.Messages.Update(message);
+        await context.SaveChangesAsync();
+        return message;
+    }
 
-        public async Task<Message> EditMessageAsync(Message message)
-        {
-            _context.Messages.Update(message);
-            await _context.SaveChangesAsync();
-            return message;
-        }
-
-        public async Task DeleteMessageAsync(Guid id)
-        {
-            var message = await _context.Messages.FindAsync(id);
-            if (message is not null)
-                _context.Messages.Remove(message);
-            await _context.SaveChangesAsync();
-        }
+    public async Task DeleteMessageAsync(Guid id)
+    {
+        var message = await context.Messages.FindAsync(id);
+        if (message is not null)
+            context.Messages.Remove(message);
+        await context.SaveChangesAsync();
     }
 }

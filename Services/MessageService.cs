@@ -2,42 +2,34 @@
 using ChatApp.Repositories.interfaces;
 using ChatApp.Services.interfaces;
 
-namespace ChatApp.Services
+namespace ChatApp.Services;
+
+public class MessageService(IMessageRepository messageRepository) : IMessageService
 {
-    public class MessageService : IMessageService
+    public async Task<IEnumerable<Message>> GetAllChatMessagesAsync(Guid chatId)
     {
-        private readonly IMessageRepository _messageRepository;
-
-        public MessageService(IMessageRepository messageRepository)
-        {
-            _messageRepository = messageRepository;
-        }
-
-        public async Task<IEnumerable<Message>> GetAllChatMessagesAsync(Guid chatId)
-        {
-            return await _messageRepository.GetAllChatMessagesAsync(chatId);
-        }
-
-        public async Task<Message> GetMessageByIdAsync(Guid id)
-        {
-            return await _messageRepository.GetMessageByIdAsync(id);
-        }
-
-        public async Task<Message> CreateNewMessageAsync(Message message)
-        {
-            return await _messageRepository.CreateNewMessageAsync(message);
-        }
-
-        public async Task<Message> EditMessageAsync(Message message)
-        {
-            return await _messageRepository.EditMessageAsync(message);
-        }
-
-        public async Task DeleteMessageAsync(Guid id)
-        {
-            await _messageRepository.DeleteMessageAsync(id);
-        }
-
-
+        return await messageRepository.GetAllChatMessagesAsync(chatId);
     }
+
+    public async Task<Message> GetMessageByIdAsync(Guid id)
+    {
+        return await messageRepository.GetMessageByIdAsync(id);
+    }
+
+    public async Task<Message> CreateNewMessageAsync(Message message)
+    {
+        return await messageRepository.CreateNewMessageAsync(message);
+    }
+
+    public async Task<Message> EditMessageAsync(Message message)
+    {
+        return await messageRepository.EditMessageAsync(message);
+    }
+
+    public async Task DeleteMessageAsync(Guid id)
+    {
+        await messageRepository.DeleteMessageAsync(id);
+    }
+
+
 }
