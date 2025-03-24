@@ -37,6 +37,12 @@ builder.Services.AddCors(options =>
     });
 });
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+    var seeder = new DataSeeder(context);
+    seeder.SeedData();
+}
 app.UseRouting();
 app.UseHttpsRedirection();
 app.UseCors("AllowSpecificOrigin");
