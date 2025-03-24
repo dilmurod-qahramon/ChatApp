@@ -5,13 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ChatApp.Repositories
 {
-    public class MessageRepository : IMessageRepository
+    public class MessageRepository(ChatDbContext context) : IMessageRepository
     {
-        private readonly ChatDbContext _context;
-        public MessageRepository(ChatDbContext context)
-        {
-            _context = context;
-        }
+        private readonly ChatDbContext _context = context;
 
         public async Task<IEnumerable<Message>> GetAllChatMessagesAsync(Guid chatId)
         {
