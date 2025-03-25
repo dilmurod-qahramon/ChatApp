@@ -45,4 +45,9 @@ public class ChatService(IChatRepository chatRepository) : IChatService
     {
         await chatRepository.DeleteChatAsync(chatId);
     }
+
+    public async Task<IList<Guid>> GetUserChatIdsAsync(Guid userId)
+    {
+        return await chatRepository.GetUserChatIdsAsync(userId);
+    }
 }

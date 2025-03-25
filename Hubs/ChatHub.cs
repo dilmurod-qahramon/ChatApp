@@ -1,18 +1,23 @@
 ﻿using ChatApp.Models;
 using ChatApp.Services.interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;  
 
 namespace ChatApp.Hubs;
-
-public class ChatHub(IChatService chatService, IUserService userService, IMessageService messageService) : Hub
+[Authorize]
+public class ChatHub(IChatService chatService, IMessageService messageService) : Hub
 {
-    public async Task SendMessage(Guid chatId, Guid userId, string message)
+    private static readonly Dictionary<Guid, List<string>> _userConnections = [];
+    public async Task SendMessage(Guid chatId, string message)
     {
+        var userIdStr = (Context.User?.FindFirst("sub")?.Value)
+         ?? throw new HubException("User not found.");
+        var userId = Guid.Parse(userIdStr);
+
         var chat = await chatService.GetChatByIdAsync(chatId)
            ?? throw new HubException("Chat not found.");
-        var user = await userService.GetUserByIdAsync(userId)
-           ?? throw new Exception("User is not found!");
-        if (await chatService.IsMemberOfChat(userId, chatId))
+      
+        if (!await chatService.IsMemberOfChat(userId, chatId))
             throw new HubException("User is not a member of this chat.");
         if (message.Trim().Length == 0) return;
         var chatMessage = new Message
@@ -27,94 +32,148 @@ public class ChatHub(IChatService chatService, IUserService userService, IMessag
         await Clients.Group(chatId.ToString()).SendAsync("ReceiveMessage", userId, message);
     }
 
-    public async Task JoinChat(Guid chatId, Guid userId)
+    public async Task JoinChat(Guid chatId)
     {
-        var user = await userService.GetUserByIdAsync(userId)
-            ?? throw new Exception("User is not found!");
+        var userIdStr = (Context.User?.FindFirst("sub")?.Value)
+          ?? throw new HubException("User not found.");
+        var userId = Guid.Parse(userIdStr);
+
         var chat = await chatService.GetChatByIdAsync(chatId)
             ?? throw new Exception("Chat is not found!");
-        if (await chatService.IsMemberOfChat(userId, chatId)) return;
 
-        await chatService.AddNewUserToChatAsync(chatId, userId);
-        await Groups.AddToGroupAsync(Context.ConnectionId, chatId.ToString());
+        if (!await chatService.IsMemberOfChat(userId, chatId))
+            await chatService.AddNewUserToChatAsync(chatId, userId);
+
+        if (!_userConnections.ContainsKey(userId))
+            _userConnections[userId] = [];
+
+        if (!_userConnections[userId].Contains(Context.ConnectionId))
+        {
+            _userConnections[userId].Add(Context.ConnectionId);
+            await Groups.AddToGroupAsync(Context.ConnectionId, chatId.ToString());
+        }
     }
 
-    public async Task LeaveChat(Guid chatId, Guid userId)
+    public async Task LeaveChat(Guid chatId)
     {
+        var userIdStr = (Context.User?.FindFirst("sub")?.Value)
+          ?? throw new HubException("User not found.");
+        var userId = Guid.Parse(userIdStr);
         var chat = await chatService.GetChatByIdAsync(chatId)
             ?? throw new HubException("Chat is not found!");
-        var user = await userService.GetUserByIdAsync(userId)
-            ?? throw new Exception("User is not found!");
-        if (await chatService.IsMemberOfChat(userId, chatId))
-            await chatService.RemoveUserFromChatAsync(chatId, userId);
+       
+        if (!await chatService.IsMemberOfChat(userId, chatId))
+            return;
+        await chatService.RemoveUserFromChatAsync(chatId, userId);
 
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, chatId.ToString());
+        if (_userConnections.ContainsKey(userId))
+        {
+            foreach (var connectionId in _userConnections[userId])
+            {
+                await Groups.RemoveFromGroupAsync(connectionId, chatId.ToString());
+            }
+
+            _userConnections.Remove(userId);
+        }
+        await Clients.Group(chatId.ToString()).SendAsync("UserLeft", chatId, userId);
     }
 
     public async Task ClearChatHistory(Guid chatId)
     {
+        var userIdStr = (Context.User?.FindFirst("sub")?.Value)
+           ?? throw new HubException("User not found.");
+        var userId = Guid.Parse(userIdStr);
+
         var chat = await chatService.GetChatByIdAsync(chatId)
            ?? throw new HubException("Chat is not found!");
-        if (chat.Messages.Count() > 0)
-            throw new HubException("Chat history is already empty.");
+        
+        if (chat.OwnerId != userId) 
+            throw new HubException("Only owners of the chat can clear it!");
 
         await chatService.ClearChatHistoryAsync(chatId);
         await Clients.Group(chatId.ToString()).SendAsync("ChatHistoryCleared", chatId);
     }
 
-    public async Task AddUserToChat(Guid chatId, Guid userId)
+    public async Task AddUserToChat(Guid chatId)
     {
-        var user = await userService.GetUserByIdAsync(userId)
-        ?? throw new HubException("User not found.");
-
+        var userIdStr = (Context.User?.FindFirst("sub")?.Value) 
+            ?? throw new HubException("User not found.");
+        var userId = Guid.Parse(userIdStr);
         var chat = await chatService.GetChatByIdAsync(chatId)
             ?? throw new HubException("Chat not found.");
 
         await chatService.AddNewUserToChatAsync(chatId, userId);
+        if (!_userConnections.ContainsKey(userId))
+            _userConnections[userId] = [];
+
+        if (!_userConnections[userId].Contains(Context.ConnectionId))
+        {
+            _userConnections[userId].Add(Context.ConnectionId);
+            await Groups.AddToGroupAsync(Context.ConnectionId, chatId.ToString());
+        }
+
         await Clients.Group(chatId.ToString()).SendAsync("UserAdded", chatId, userId);
     }
 
-    public async Task RemoveUserFromChat(Guid chatId, Guid userId, Guid ownerId)
+    public async Task RemoveUserFromChat(Guid chatId, Guid userId)
     {
-        var user = await userService.GetUserByIdAsync(userId)
-            ?? throw new HubException("User not found.");
+        var requestingUserId = Context.User?.FindFirst("sub")?.Value;
 
         var chat = await chatService.GetChatByIdAsync(chatId)
             ?? throw new HubException("Chat not found.");
-        if (chat.OwnerId != ownerId)
+        if (chat.OwnerId.ToString() != requestingUserId)
         {
             throw new HubException("Can't remove a user");
         }
-        if (!await chatService.IsMemberOfChat(userId, chatId))
-        {
-            throw new HubException("User is not a member of this chat.");
-        }
+        if (await chatService.IsMemberOfChat(userId, chatId))
+            return;
+
         await chatService.RemoveUserFromChatAsync(chatId, userId);
-        await Clients.Group(chatId.ToString()).SendAsync("UserRemoved", chatId, userId);
-    }
-
-    public async Task DeleteChat(Guid chatId, Guid requestingUserId)
-    {
-        var chat = await chatService.GetChatByIdAsync(chatId)
-        ?? throw new HubException("Chat not found.");
-
-        if (chat.OwnerId != requestingUserId)
+        if (_userConnections.ContainsKey(userId))
         {
-            throw new HubException("You do not have permission to delete this chat.");
+            foreach (var connectionId in _userConnections[userId])
+            {
+                await Groups.RemoveFromGroupAsync(connectionId, chatId.ToString());
+            }
+
+            _userConnections.Remove(userId);
         }
 
-        await chatService.DeleteChatAsync(chatId);
-        await Clients.Group(chatId.ToString()).SendAsync("ChatDeleted", chatId);
+        await Clients.Group(chatId.ToString()).SendAsync("UserRemoved", chatId, userId);
     }
 
     public override async Task OnConnectedAsync()
     {
-        Console.WriteLine($"✅ Client connected: {Context.ConnectionId}");
+        var userIdStr = (Context.User?.FindFirst("sub")?.Value)
+            ?? throw new HubException("User not found.");
+        var userId = Guid.Parse(userIdStr);
+
+        var chatIds = await chatService.GetUserChatIdsAsync(userId); 
+        if (!_userConnections.ContainsKey(userId))
+            _userConnections[userId] = new List<string>();
+
+        _userConnections[userId].Add(Context.ConnectionId);
+
+        foreach (var chatId in chatIds)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, chatId.ToString());
+        }
         await base.OnConnectedAsync();
     }
+
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        Console.WriteLine($"Client disconnected. Error: {exception?.Message}");
+        var userIdStr = (Context.User?.FindFirst("sub")?.Value)
+            ?? throw new HubException("User not found.");
+        var userId = Guid.Parse(userIdStr);
+        if (_userConnections.TryGetValue(userId, out var connections))
+        {
+            connections.Remove(Context.ConnectionId);
+            if (connections.Count == 0)
+            {
+                _userConnections.Remove(userId);
+            }
+        }
         await base.OnDisconnectedAsync(exception);
     }
 }

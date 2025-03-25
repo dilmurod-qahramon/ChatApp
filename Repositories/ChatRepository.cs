@@ -64,4 +64,12 @@ public class ChatRepository(ChatDbContext context) : IChatRepository
         await context.Chats.Where(chat => chat.Id == chatId).ExecuteDeleteAsync(); 
         await context.SaveChangesAsync();
     }
+
+    public async Task<IList<Guid>> GetUserChatIdsAsync(Guid userId)
+    {
+       return await context.ChatUsers
+            .Where(x => x.UserId == userId)
+            .Select(chatUser => chatUser.ChatId)
+            .ToListAsync();
+    }
 }
