@@ -4,7 +4,7 @@ namespace ChatApp.Repositories.interfaces;
 
 public interface IChatRepository
 {
-    Task<IList<Guid>> GetUserChatIdsAsync(Guid userId);
+    Task<IList<Chat>> GetAllUserChatsByUserIdAsync(Guid userId);
     Task<Chat?> GetChatByIdAsync(Guid chatId);
     Task<bool> IsMemberOfChat(Guid userId, Guid chatId);
     Task<Chat> CreateNewChatAsync(Chat chat);

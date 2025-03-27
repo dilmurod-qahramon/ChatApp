@@ -11,6 +11,11 @@ public class ChatService(IChatRepository chatRepository) : IChatService
         return await chatRepository.GetChatByIdAsync(chatId);
     }
 
+    public async Task<IList<Chat>> GetAllUserChatsByUserIdAsync(Guid userId)
+    {
+        return await chatRepository.GetAllUserChatsByUserIdAsync(userId);
+    }
+
     public async Task<bool> IsMemberOfChat(Guid userId, Guid chatId)
     {
         return await chatRepository.IsMemberOfChat(userId, chatId);
@@ -44,10 +49,5 @@ public class ChatService(IChatRepository chatRepository) : IChatService
     public async Task DeleteChatAsync(Guid chatId)
     {
         await chatRepository.DeleteChatAsync(chatId);
-    }
-
-    public async Task<IList<Guid>> GetUserChatIdsAsync(Guid userId)
-    {
-        return await chatRepository.GetUserChatIdsAsync(userId);
     }
 }

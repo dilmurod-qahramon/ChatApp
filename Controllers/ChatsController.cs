@@ -1,21 +1,47 @@
 ﻿using ChatApp.DTOs;
 using ChatApp.Models;
 using ChatApp.Services.interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ChatApp.Controllers;
 
 [Route("api/[controller]")]
+//[Authorize]
 [ApiController]
 public class ChatsController(IChatService chatService, IUserService userService) : ControllerBase
 {
+    [HttpGet("user/{userId}")]
+    public async Task<ActionResult<IEnumerable<ChatDto>>> GetUserChats(Guid userId)
+    {
+        var chats = await chatService.GetAllUserChatsByUserIdAsync(userId);
+        return Ok(chats.Select(chat => new ChatDto()
+        {
+            Id = chat.Id,
+            Name = chat.Name,
+            CreatedAt = chat.CreatedAt,
+            OwnerId = chat.OwnerId,
+            Messages = chat.Messages
+            .Select(message => new MessageDto()
+            { Id = message.Id, Text = message.Text, UserId = message.UserId }).ToList(),
+        }));
+    }
 
     [HttpGet("{chatId}")]
-    public async Task<IActionResult> GetChatById(Guid chatId)
+    public async Task<ActionResult<ChatDto>> GetChatById(Guid chatId)
     {
         var chat = await chatService.GetChatByIdAsync(chatId);
         if (chat == null) return NotFound();
-        return Ok(chat);
+        var chatDto = new ChatDto()
+        {
+            Id = chat.Id,
+            Name = chat.Name,
+            OwnerId = chat.OwnerId,
+            CreatedAt = chat.CreatedAt,
+            Messages = chat.Messages.Select(message => new MessageDto()
+            { Id = message.Id, Text = message.Text, UserId = message.UserId }).ToList(),
+        };
+        return Ok(chatDto);
     }
 
     [HttpPost]
@@ -33,6 +59,7 @@ public class ChatsController(IChatService chatService, IUserService userService)
     [HttpPost("{chatId}")]
     public async Task<IActionResult> AddUserToChat(Guid chatId, Guid userId)
     {
+        //only chat owner should be able to add user to chat
         var user = await userService.GetUserByIdAsync(userId);
         if(user == null) return NotFound("User is not found!");
 
@@ -57,10 +84,12 @@ public class ChatsController(IChatService chatService, IUserService userService)
     }
 
     [HttpDelete("{chatId}")]
-    public async Task<IActionResult> DeleteChat(Guid chatId, Guid userId)
+    public async Task<IActionResult> DeleteChat(Guid chatId)
     {
-        var user = await userService.GetUserByIdAsync(userId);
-        if (user == null) return NotFound("User is not found!");
+        var userIdStr = (HttpContext.User?.FindFirst("sub")?.Value)
+            ?? throw new UnauthorizedAccessException("User not found.");
+        var userId = Guid.Parse(userIdStr);
+
         var chat = await chatService.GetChatByIdAsync(chatId);
         if (chat == null) return NotFound("Chat is not found!");
         if (chat.OwnerId != userId) BadRequest("Only owner of the chat can delete it");
@@ -69,11 +98,11 @@ public class ChatsController(IChatService chatService, IUserService userService)
     }
 
     [HttpDelete("{chatId}/users/{userId}")]
-    public async Task<IActionResult> RemoveUserFromChat(Guid chatId, Guid userId)
+    public async Task<IActionResult> RemoveUserFromChat(Guid chatId)
     {
-        var user = await userService.GetUserByIdAsync(userId);
-        if (user == null) return NotFound("User is not found!");
-
+        var userIdStr = (HttpContext.User?.FindFirst("sub")?.Value)
+           ?? throw new UnauthorizedAccessException("User not found.");
+        var userId = Guid.Parse(userIdStr);
         var chat = await chatService.GetChatByIdAsync(chatId);
         if (chat == null) return NotFound("Chat is not found!");
         if (chat.OwnerId != userId) BadRequest("Only owner of the chat can remove users");
@@ -86,11 +115,11 @@ public class ChatsController(IChatService chatService, IUserService userService)
     }
 
     [HttpDelete("{chatId}/messages")]
-    public async Task<IActionResult> ClearChatHistory(Guid chatId, Guid userId)
+    public async Task<IActionResult> ClearChatHistory(Guid chatId)
     {
-        var user = await userService.GetUserByIdAsync(userId);
-        if (user == null) return NotFound("User is not found!");
-
+        var userIdStr = (HttpContext.User?.FindFirst("sub")?.Value)
+           ?? throw new UnauthorizedAccessException("User not found.");
+        var userId = Guid.Parse(userIdStr);
         var chat = await chatService.GetChatByIdAsync(chatId);
         if (chat == null) return NotFound("Chat is not found!");
         if (chat.OwnerId != userId) BadRequest("Only owner of the chat can clear history");

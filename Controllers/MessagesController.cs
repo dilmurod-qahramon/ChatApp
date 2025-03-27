@@ -10,11 +10,19 @@ namespace ChatApp.Controllers;
 public class MessagesController(IMessageService messageService, IChatService chatService, IUserService userService) : ControllerBase
 {
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetMessageById(Guid id)
+    public async Task<ActionResult<MessageDto>> GetMessageById(Guid id)
     {
         var message = await messageService.GetMessageByIdAsync(id);
         if (message == null) return NotFound();
-        return Ok(message);
+
+        var dto = new MessageDto()
+        {
+            Id = message.Id,
+            ChatId = message.ChatId,
+            UserId = message.UserId,
+            Text = message.Text
+        };
+        return Ok(dto);
     }
 
     [HttpGet("chat/{chatId}")]
@@ -29,10 +37,10 @@ public class MessagesController(IMessageService messageService, IChatService cha
     {
         var message = new Message()
         {
-            Text = messageDto.Text.Trim(),
+            Text = messageDto.Text?.Trim(),
             UserId = messageDto.UserId,
             ChatId = messageDto.ChatId,
-            ImageUrl = messageDto.ImageUrl.Trim(),
+            ImageUrl = messageDto.ImageUrl?.Trim(),
         };
         var createdMessage = await messageService.CreateNewMessageAsync(message);
         return CreatedAtAction(nameof(GetMessageById), new { id = createdMessage.Id }, createdMessage);
@@ -46,11 +54,8 @@ public class MessagesController(IMessageService messageService, IChatService cha
         var chat = chatService.GetChatByIdAsync(messageDto.ChatId);
         if(chat == null) return NotFound("chat is not  found!");
 
-        var user = userService.GetUserByIdAsync(messageDto.UserId);
-        if(user == null) return NotFound("user is not  found!");
-
         var message = await messageService.GetMessageByIdAsync(id);
-        message.Text = messageDto.Text.Trim();
+        message.Text = messageDto.Text?.Trim();
         var updatedMessage = await messageService.EditMessageAsync(message);
         return Ok(updatedMessage);
     }

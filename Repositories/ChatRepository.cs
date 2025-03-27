@@ -7,11 +7,21 @@ namespace ChatApp.Repositories;
 public class ChatRepository(ChatDbContext context) : IChatRepository
 {
     public async Task<Chat?> GetChatByIdAsync(Guid chatId)
-        {
-            return await context.Chats
-                .Include(chat => chat.Messages) 
-                .FirstOrDefaultAsync(chat => chat.Id == chatId);
-        }
+    {
+        return await context.Chats
+            .Include(chat => chat.Messages)
+            .FirstOrDefaultAsync(chat => chat.Id == chatId);
+    }
+
+    public async Task<IList<Chat>> GetAllUserChatsByUserIdAsync(Guid userId)
+    {
+        return await context.ChatUsers
+             .Where(x => x.UserId == userId)
+             .Include(c => c.Chat)
+             .ThenInclude(x => x.Messages)
+             .Select(x => x.Chat)
+             .ToListAsync();
+    }
 
     public async Task<bool> IsMemberOfChat(Guid userId, Guid chatId)
     {
@@ -63,13 +73,5 @@ public class ChatRepository(ChatDbContext context) : IChatRepository
         await context.ChatUsers.Where(cu => cu.ChatId == chatId).ExecuteDeleteAsync();
         await context.Chats.Where(chat => chat.Id == chatId).ExecuteDeleteAsync(); 
         await context.SaveChangesAsync();
-    }
-
-    public async Task<IList<Guid>> GetUserChatIdsAsync(Guid userId)
-    {
-       return await context.ChatUsers
-            .Where(x => x.UserId == userId)
-            .Select(chatUser => chatUser.ChatId)
-            .ToListAsync();
     }
 }

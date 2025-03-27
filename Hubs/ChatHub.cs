@@ -28,8 +28,8 @@ public class ChatHub(IChatService chatService, IMessageService messageService) :
             Text = message,
         };
 
-        await messageService.CreateNewMessageAsync(chatMessage);
-        await Clients.Group(chatId.ToString()).SendAsync("ReceiveMessage", userId, message);
+        var newChatMessage = await messageService.CreateNewMessageAsync(chatMessage);
+        await Clients.Group(chatId.ToString()).SendAsync("ReceiveMessage", newChatMessage);
     }
 
     public async Task JoinChat(Guid chatId)
@@ -148,7 +148,7 @@ public class ChatHub(IChatService chatService, IMessageService messageService) :
             ?? throw new HubException("User not found.");
         var userId = Guid.Parse(userIdStr);
 
-        var chatIds = await chatService.GetUserChatIdsAsync(userId); 
+        var chatIds = await chatService.GetAllUserChatsByUserIdAsync(userId); 
         if (!_userConnections.ContainsKey(userId))
             _userConnections[userId] = new List<string>();
 

@@ -22,8 +22,8 @@ public class DataSeeder(ChatDbContext context)
             new() { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), Name = "TestChat1", OwnerId = Guid.Parse("22222222-2222-2222-2222-111111111111") },
             new() { Id = Guid.Parse("11111111-1111-1111-1111-222222222222"), Name = "TestChat2", OwnerId = Guid.Parse("22222222-2222-2222-2222-222222222222") },
             new() { Id = Guid.Parse("11111111-1111-1111-1111-333333333333"), Name = "TestChat3", OwnerId = Guid.Parse("22222222-2222-2222-2222-333333333333") },
-            new() { Id = Guid.Parse("11111111-1111-1111-1111-444444444444"), Name = "TestChat3", OwnerId = Guid.Parse("22222222-2222-2222-2222-333333333333") },
-    ];
+            new() { Id = Guid.Parse("11111111-1111-1111-1111-444444444444"), Name = "TestChat4", OwnerId = Guid.Parse("22222222-2222-2222-2222-333333333333") },
+        ];
     }
 
     private static List<Message> GetTestMessageData()

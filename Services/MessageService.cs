@@ -11,7 +11,7 @@ public class MessageService(IMessageRepository messageRepository) : IMessageServ
         return await messageRepository.GetAllChatMessagesAsync(chatId);
     }
 
-    public async Task<Message> GetMessageByIdAsync(Guid id)
+    public async Task<Message?> GetMessageByIdAsync(Guid id)
     {
         return await messageRepository.GetMessageByIdAsync(id);
     }
